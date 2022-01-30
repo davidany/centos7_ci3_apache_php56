@@ -1,0 +1,69 @@
+version: '3.9'
+services:
+  ci3-php:
+    container_name: ci3-php
+    image: ci3-php
+    networks:
+      dominion_net:
+        ipv4_address: 15.16.208.98
+    hostname: ci3
+    domainname: ci3.com    
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    ports:
+      - "98:80"
+    links:
+      - mysql
+    volumes:
+      - ./:/var/www/html
+  mysql:
+    container_name: ci3-mysql
+    image: mysql:5.7
+    volumes:
+     - ci3-mysql/:/var/lib/mysql
+    networks:
+     - dominion_net
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'ci3'
+      MYSQL_USER: 'ci3'
+      MYSQL_PASSWORD: 'ci3'
+      MYSQL_ROOT_PASSWORD: 'ci3'
+    ports:
+      - '33060:3306'
+    expose:
+      - '3306'
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cp-phpmyadmin-mysql
+    networks:
+      dominion_net:
+        ipv4_address: 15.16.208.198
+    env_file:
+      - docker/phpmyadmin/phpmyadmin.env
+    networks:
+      - dominion_net
+    links:
+      - mysql:mysql
+    ports:
+      - 9008:80
+    volumes:
+      - /sessions
+      - ./docker/phpmyadmin/php.ini-development:/usr/local/etc/php/php.ini-development
+      - ./docker/phpmyadmin/php.ini-production:/usr/local/etc/php/php.ini-production
+    environment:
+      MYSQL_USER: ci3
+      MYSQL_PASSWORD: ci3
+      MYSQL_ROOT_PASSWORD: ci3
+      PMA_HOST: mysql
+volumes:
+  ci3-mysql:
+    driver: "local"
+networks:
+  dominion_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "15.16.208.0/24"
+        - subnet: "2001:3984:3989::/64"
